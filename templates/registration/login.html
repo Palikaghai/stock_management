@@ -1,0 +1,40 @@
+{% load static %}
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Sign in | SmartStock</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{% static 'inventory/app.css' %}">
+    </head>
+    <body class="login-page">
+        <div class="login-card">
+            <a class="brand" href="#">
+                <span class="brand-mark">S</span>
+                <span>SmartStock</span>
+            </a>
+            <span class="kicker">Inventory control, clarified</span>
+            <h1>Welcome back.</h1>
+            <p class="muted">Sign in to manage your stockroom.</p>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="field">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <span class="error">{{ field.errors|striptags }}</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if form.non_field_errors %}
+                    <span class="error">Your username and password did not match.</span>
+                {% endif %}
+                <button class="button button-dark full" type="submit">Sign in →</button>
+            </form>
+            <small class="login-note">Palika Ghai</small>
+        </div>
+    </body>
+</html>
