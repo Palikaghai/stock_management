@@ -12,5 +12,5 @@ SmartStock is an inventory and stock management system built with **Python 3.10*
 - Transaction history with movement filters
 - Category inventory composition and movement analytics
   
-
+Updation in process...
 
