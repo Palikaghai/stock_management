@@ -1,0 +1,34 @@
+﻿@model SmartStock.ViewModels.ReportsViewModel
+@{ ViewData["Title"] = "Reports"; var movement = Model.ReportType is "stock-in" or "stock-out"; }
+<section class="page-heading"><div><span class="eyebrow">INSIGHTS &amp; EXPORTS</span><h1>Inventory reports</h1><p>Explore stock levels, supplier coverage and inventory movement.</p></div><a class="btn btn-outline-secondary" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-arrow-left"></i> Dashboard</a></section>
+<form class="filters" method="get" asp-controller="Reports" asp-action="Index" id="reportFilters"><div class="filter-grid">
+    <div class="filter-field"><label for="reportType">Report type</label><select class="form-select" id="reportType" name="reportType">
+        <option value="overall" selected="@(Model.ReportType == "overall")">Overall inventory</option><option value="category" selected="@(Model.ReportType == "category")">Category-wise products</option><option value="supplier" selected="@(Model.ReportType == "supplier")">Supplier-wise inventory</option><option value="stock-in" selected="@(Model.ReportType == "stock-in")">Stock IN</option><option value="stock-out" selected="@(Model.ReportType == "stock-out")">Stock OUT</option><option value="low-stock" selected="@(Model.ReportType == "low-stock")">Low stock</option>
+    </select></div>
+    <div class="filter-field date-filter" hidden="@(!movement)"><label for="startDate">From date</label><input class="form-control" id="startDate" name="startDate" type="date" value="@Model.StartDate?.ToString("yyyy-MM-dd")" /></div>
+    <div class="filter-field date-filter" hidden="@(!movement)"><label for="endDate">To date</label><input class="form-control" id="endDate" name="endDate" type="date" value="@Model.EndDate?.ToString("yyyy-MM-dd")" /></div>
+    <div class="filter-field"><label for="category">Category</label><select class="form-select" name="category" id="category"><option value="">All categories</option>@foreach (var item in Model.Categories) { <option value="@item" selected="@(Model.Category == item)">@item</option> }</select></div>
+    <div class="filter-field"><label for="supplier">Supplier</label><select class="form-select" name="supplier" id="supplier"><option value="">All suppliers</option>@foreach (var item in Model.Suppliers) { <option value="@item" selected="@(Model.Supplier == item)">@item</option> }</select></div>
+    <div class="filter-field"><label for="productId">Product</label><select class="form-select" name="productId" id="productId"><option value="">All products</option>@foreach (var item in Model.Products) { <option value="@item.Id" selected="@(Model.ProductId == item.Id)">@item.Name</option> }</select></div>
+    <div class="filter-actions"><button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Apply</button><a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="Index" title="Clear filters"><i class="bi bi-arrow-counterclockwise"></i></a></div>
+</div><p class="stat-note">Date filters apply to Stock IN and Stock OUT. Other filters apply to every report.</p></form>
+<section class="panel">
+    <div class="report-summary"><div><h2>@Model.ReportTitle <span class="count">@Model.Rows.Count records</span></h2><p>Sample inventory data · Updated @DateTime.Now.ToString("MMM d, yyyy 'at' h:mm tt")</p></div><div class="report-tools"><div class="report-total"><small>REPORT VALUE</small>₹@Model.TotalValue.ToString("N0")</div><button class="btn btn-outline-secondary" type="submit" form="reportFilters" formaction="@Url.Action("Export", "Reports")"><i class="bi bi-file-earmark-spreadsheet"></i> Export Excel CSV</button></div></div>
+    @if (Model.Rows.Count == 0) { <div class="empty">No records match these filters. Try changing your selection.</div> } else {
+    <div class="table-responsive"><table class="data-table"><thead><tr><th>Product</th><th>Category</th><th>Supplier</th><th>Quantity</th><th>Unit cost</th><th>Value</th><th>Status / type</th><th>Date / reference</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows) { <tr><td class="product">@row.Product<small>@row.Sku</small></td><td>@row.Category</td><td>@row.Supplier</td><td>@row.Quantity</td><td>₹@row.UnitCost.ToString("N2")</td><td>₹@row.Value.ToString("N2")</td><td><span class="badge-soft @(row.Status == "IN" ? "move-in" : row.Status == "OUT" ? "move-out" : "")">@row.Status</span></td><td>@(row.Date?.ToString("MMM d, yyyy") ?? "—") @row.Reference</td></tr> }
+    </tbody></table></div> }
+</section>
+@section Scripts {
+<script>
+(() => {
+ const type = document.getElementById("reportType"), fields = document.querySelectorAll(".date-filter");
+ const sync = () => fields.forEach(x => x.hidden = !["stock-in", "stock-out"].includes(type.value));
+ type.addEventListener("change", sync); sync();
+ document.getElementById("reportFilters").addEventListener("submit", e => {
+  const from = document.getElementById("startDate"), to = document.getElementById("endDate");
+  if (from.value && to.value && from.value > to.value) { e.preventDefault(); to.setCustomValidity("End date must be on or after the start date."); to.reportValidity(); to.addEventListener("input", () => to.setCustomValidity(""), {once:true}); }
+ });
+})();
+</script>
+}
