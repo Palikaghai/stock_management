@@ -1,0 +1,22 @@
+@model SmartStock.ViewModels.ProductFormViewModel
+@{
+    ViewData["Title"] = "Edit product";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">PRODUCT CATALOG</span>
+        <h1>Edit product</h1>
+        <p>Update product details. Stock quantity changes through Stock IN or Stock OUT.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index"><i class="bi bi-arrow-left"></i> Products</a>
+</section>
+<section class="panel product-form-panel">
+    <form asp-action="Edit" method="post" class="settings-form">
+        <input asp-for="Id" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_ProductForm" model="Model" />
+        <div class="profile-actions">
+            <button type="submit" class="btn btn-primary">Save product</button>
+        </div>
+    </form>
+</section>

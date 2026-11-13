@@ -1,0 +1,45 @@
+@model SmartStock.ViewModels.ProductFormViewModel
+<div class="form-row two-up">
+    <div class="field-group">
+        <label asp-for="Name"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="field-group">
+        <label asp-for="Sku"></label>
+        <input asp-for="Sku" class="form-control" />
+        <span asp-validation-for="Sku" class="text-danger"></span>
+    </div>
+    <div class="field-group">
+        <label asp-for="Category"></label>
+        <input asp-for="Category" class="form-control" list="categoryOptions" />
+        <datalist id="categoryOptions">
+            @foreach (var category in SmartStock.ViewModels.InventoryData.Categories)
+            {
+                <option value="@category"></option>
+            }
+        </datalist>
+        <span asp-validation-for="Category" class="text-danger"></span>
+    </div>
+    <div class="field-group">
+        <label asp-for="Supplier"></label>
+        <input asp-for="Supplier" class="form-control" list="supplierOptions" />
+        <datalist id="supplierOptions">
+            @foreach (var supplier in SmartStock.ViewModels.InventoryData.Suppliers)
+            {
+                <option value="@supplier"></option>
+            }
+        </datalist>
+        <span asp-validation-for="Supplier" class="text-danger"></span>
+    </div>
+    <div class="field-group">
+        <label asp-for="ReorderLevel"></label>
+        <input asp-for="ReorderLevel" class="form-control" />
+        <span asp-validation-for="ReorderLevel" class="text-danger"></span>
+    </div>
+    <div class="field-group">
+        <label asp-for="UnitCost"></label>
+        <input asp-for="UnitCost" class="form-control" step="0.01" />
+        <span asp-validation-for="UnitCost" class="text-danger"></span>
+    </div>
+</div>

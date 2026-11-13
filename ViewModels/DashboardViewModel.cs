@@ -6,6 +6,7 @@ public sealed class DashboardViewModel
     public decimal TotalStockValue { get; init; }
     public int LowStockCount { get; init; }
     public int TotalSuppliers { get; init; }
+    public IReadOnlyList<InventoryProduct> Products { get; init; } = [];
     public IReadOnlyList<InventoryTransaction> RecentTransactions { get; init; } = [];
     public IReadOnlyList<InventoryProduct> LowStockProducts { get; init; } = [];
     public IReadOnlyList<string> CategoryLabels { get; init; } = [];

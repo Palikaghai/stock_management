@@ -1,0 +1,64 @@
+@model SmartStock.ViewModels.StockMovementViewModel
+@{
+    ViewData["Title"] = "Stock IN";
+    var products = Model.Products.ToDictionary(product => product.Id);
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">STOCK OPERATIONS</span>
+        <h1>Stock IN</h1>
+        <p>Receive stock and update the available quantity for a product.</p>
+    </div>
+</section>
+<div class="inventory-operation-grid">
+    <section class="panel operation-panel">
+        <div class="panel-head"><div><h2>Record incoming stock</h2><p>Each submission updates on-hand inventory and creates a transaction.</p></div></div>
+        <form asp-action="Index" method="post" class="settings-form">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="field-group">
+                <label asp-for="ProductId"></label>
+                <select asp-for="ProductId" class="form-select">
+                    <option value="0">Select a product</option>
+                    @foreach (var product in Model.Products)
+                    {
+                        <option value="@product.Id" selected="@(Model.ProductId == product.Id)">@product.Name (@product.Sku) — @product.OnHand on hand</option>
+                    }
+                </select>
+                <span asp-validation-for="ProductId" class="text-danger"></span>
+            </div>
+            <div class="field-group">
+                <label asp-for="Quantity"></label>
+                <input asp-for="Quantity" class="form-control" min="1" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+            <div class="field-group">
+                <label asp-for="Reference"></label>
+                <input asp-for="Reference" class="form-control" placeholder="Purchase order or receipt number" />
+                <span asp-validation-for="Reference" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-down"></i> Receive stock</button>
+        </form>
+    </section>
+    <section class="panel">
+        <div class="panel-head"><div><h2>Recent stock IN</h2><p>Latest 8 incoming movements</p></div><a class="panel-link" asp-controller="Transactions" asp-action="Index" asp-route-type="IN">All transactions</a></div>
+        @if (Model.RecentTransactions.Count == 0)
+        {
+            <div class="empty">No incoming stock has been recorded.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead><tr><th>Product</th><th>Quantity</th><th>Reference</th><th>Date</th></tr></thead>
+                    <tbody>
+                    @foreach (var transaction in Model.RecentTransactions)
+                    {
+                        var product = products[transaction.ProductId];
+                        <tr><td class="product">@product.Name<small>@product.Sku</small></td><td>+@transaction.Quantity</td><td>@transaction.Reference</td><td>@transaction.Date.ToString("MMM d, yyyy")</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

@@ -1,0 +1,21 @@
+@model SmartStock.ViewModels.ProductFormViewModel
+@{
+    ViewData["Title"] = "Add product";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">PRODUCT CATALOG</span>
+        <h1>Add product</h1>
+        <p>New products start at zero on-hand. Record stock through Stock IN.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index"><i class="bi bi-arrow-left"></i> Products</a>
+</section>
+<section class="panel product-form-panel">
+    <form asp-action="Create" method="post" class="settings-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <partial name="_ProductForm" model="Model" />
+        <div class="profile-actions">
+            <button type="submit" class="btn btn-primary">Create product</button>
+        </div>
+    </form>
+</section>
