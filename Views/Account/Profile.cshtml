@@ -1,0 +1,117 @@
+@model SmartStock.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Profile";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">ACCOUNT</span>
+        <h1>Profile settings</h1>
+        <p>Manage your personal details and secure your SmartStock account.</p>
+    </div>
+</section>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success mt-3">@successMessage</div>
+}
+
+<div class="profile-grid">
+    <section class="panel profile-panel">
+        <div class="profile-header">
+            <div class="profile-avatar">@(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim()[0].ToString().ToUpperInvariant() : "U")</div>
+            <div>
+                <h2>@Model.FullName</h2>
+                <p>@Model.Email</p>
+            </div>
+        </div>
+
+        <form asp-action="Profile" asp-controller="Account" method="post" class="settings-form">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="form-row two-up">
+                <div>
+                    <label asp-for="FullName"></label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="UserName"></label>
+                    <input asp-for="UserName" class="form-control" />
+                    <span asp-validation-for="UserName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row two-up">
+                <div>
+                    <label asp-for="Email"></label>
+                    <input asp-for="Email" class="form-control" type="email" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="PhoneNumber"></label>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="Optional" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel profile-panel" id="change-password">
+        <div class="panel-head compact-head">
+            <div>
+                <h2>Change password</h2>
+                <p>Keep your login information protected.</p>
+            </div>
+        </div>
+        <form asp-action="ChangePassword" asp-controller="Account" method="post" class="settings-form">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="field-group">
+                <label>Current password</label>
+                <div class="input-with-icon input-with-action">
+                    <i class="bi bi-lock"></i>
+                    <input name="CurrentPassword" class="form-control password-field" type="password" placeholder="Enter current password" />
+                    <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>New password</label>
+                <div class="input-with-icon input-with-action">
+                    <i class="bi bi-key"></i>
+                    <input name="NewPassword" class="form-control password-field" type="password" placeholder="Choose a new password" />
+                    <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Confirm new password</label>
+                <div class="input-with-icon input-with-action">
+                    <i class="bi bi-key-fill"></i>
+                    <input name="ConfirmPassword" class="form-control password-field" type="password" placeholder="Confirm your new password" />
+                    <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button type="submit" class="btn btn-outline-secondary">Update password</button>
+            </div>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+}

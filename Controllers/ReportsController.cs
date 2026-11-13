@@ -1,12 +1,22 @@
 using System.Globalization;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartStock.Services;
 using SmartStock.ViewModels;
 
 namespace SmartStock.Controllers;
 
+[Authorize]
 public class ReportsController : Controller
 {
+    private readonly InventoryStore _inventory;
+
+    public ReportsController(InventoryStore inventory)
+    {
+        _inventory = inventory;
+    }
+
     private static readonly IReadOnlyDictionary<string, string> Titles = new Dictionary<string, string>
     {
         ["overall"] = "Overall inventory", ["category"] = "Category-wise products", ["supplier"] = "Supplier-wise inventory",
@@ -33,16 +43,19 @@ public class ReportsController : Controller
             "text/csv; charset=utf-8", $"smartstock-{report.ReportType}-{DateTime.Today:yyyyMMdd}.csv");
     }
 
-    private static ReportsViewModel Build(string type, DateTime? from, DateTime? to, string? category, string? supplier, int? productId)
+    private ReportsViewModel Build(string type, DateTime? from, DateTime? to, string? category, string? supplier, int? productId)
     {
         if (!Titles.ContainsKey(type)) type = "overall";
-        var products = InventoryData.Products;
+        var products = _inventory.Products;
+        var transactions = _inventory.Transactions;
+        var categories = _inventory.Categories;
+        var suppliers = _inventory.Suppliers;
         var lookup = products.ToDictionary(p => p.Id);
         IEnumerable<ReportRow> rows;
         if (type is "stock-in" or "stock-out")
         {
             var direction = type == "stock-in" ? "IN" : "OUT";
-            rows = InventoryData.Transactions.Where(t => t.Type == direction)
+            rows = transactions.Where(t => t.Type == direction)
                 .Where(t => !from.HasValue || t.Date.Date >= from.Value.Date)
                 .Where(t => !to.HasValue || t.Date.Date <= to.Value.Date)
                 .Select(t => { var p = lookup[t.ProductId]; return new ReportRow(p.Name, p.Sku, p.Category, p.Supplier,
@@ -62,7 +75,7 @@ public class ReportsController : Controller
         return new ReportsViewModel
         {
             ReportType = type, StartDate = from, EndDate = to, Category = category, Supplier = supplier, ProductId = productId,
-            Categories = InventoryData.Categories, Suppliers = InventoryData.Suppliers, Products = products, Rows = result,
+            Categories = categories, Suppliers = suppliers, Products = products, Rows = result,
             ReportTitle = Titles[type], TotalValue = result.Sum(r => r.Value)
         };
     }

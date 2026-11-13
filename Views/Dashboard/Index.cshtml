@@ -2,11 +2,12 @@
 @model SmartStock.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
+    var displayName = ViewBag.UserFullName as string ?? "User";
     var chartData = JsonSerializer.Serialize(new { categories = Model.CategoryLabels, categoryValues = Model.CategoryValues,
         week = Model.MovementLabels, stockIn = Model.StockInValues, stockOut = Model.StockOutValues,
         valuations = Model.ValuationValues, months = Model.MonthLabels, monthlyIn = Model.MonthlyInValues, monthlyOut = Model.MonthlyOutValues });
 }
-<section class="page-heading"><div><span class="eyebrow">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</span><h1>Good morning, Jordan ✦</h1><p>Demo inventory snapshot — connect your inventory data source when ready.</p></div><a class="btn btn-primary" asp-controller="Reports" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> View inventory report</a></section>
+<section class="page-heading"><div><span class="eyebrow">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</span><h1>Good morning, @displayName ✦</h1><p>Demo inventory snapshot — connect your inventory data source when ready.</p></div><a class="btn btn-primary" asp-controller="Reports" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> View inventory report</a></section>
 <section class="stats-grid">
     <article class="stat-card"><div class="stat-top">Total products <span class="stat-icon"><i class="bi bi-box-seam"></i></span></div><div class="stat-value">@Model.TotalProducts</div><div class="stat-note">Products tracked in this demo catalog</div></article>
     <article class="stat-card"><div class="stat-top">Total stock value <span class="stat-icon green"><i class="bi bi-currency-rupee"></i></span></div><div class="stat-value">₹@Model.TotalStockValue.ToString("N0")</div><div class="stat-note">Based on current on-hand stock</div></article>
@@ -23,14 +24,14 @@
 </section>
 <section class="panel" style="margin-bottom:15px"><div class="panel-head"><div><h2>Quick actions</h2><p>Jump into your day-to-day workflows</p></div></div><div class="panel-body quick-actions">
     <a class="quick-action" asp-controller="Reports" asp-action="Index"><i class="bi bi-file-earmark-text"></i> Inventory report</a>
-    <a class="quick-action" asp-controller="Reports" asp-action="Index" asp-route-reportType="stock-in"><i class="bi bi-box-arrow-in-down"></i> Review stock IN</a>
-    <a class="quick-action" asp-controller="Reports" asp-action="Index" asp-route-reportType="stock-out"><i class="bi bi-box-arrow-up-right"></i> Review stock OUT</a>
+    <a class="quick-action" asp-controller="StockIn" asp-action="Index"><i class="bi bi-box-arrow-in-down"></i> Record stock IN</a>
+    <a class="quick-action" asp-controller="StockOut" asp-action="Index"><i class="bi bi-box-arrow-up-right"></i> Record stock OUT</a>
     <a class="quick-action" asp-controller="Reports" asp-action="Index" asp-route-reportType="low-stock"><i class="bi bi-exclamation-circle"></i> Low stock report</a>
 </div></section>
 <section class="grid">
-    <article class="panel"><div class="panel-head"><div><h2>Recent transactions</h2><p>Latest inventory activity</p></div><a class="panel-link" asp-controller="Reports" asp-action="Index" asp-route-reportType="stock-in">View reports</a></div>
+    <article class="panel"><div class="panel-head"><div><h2>Recent transactions</h2><p>Latest inventory activity</p></div><a class="panel-link" asp-controller="Transactions" asp-action="Index">View all</a></div>
         <div class="table-responsive"><table class="data-table"><thead><tr><th>Product</th><th>Reference</th><th>Type</th><th>Quantity</th><th>Date</th></tr></thead><tbody>
-        @foreach (var transaction in Model.RecentTransactions) { var product = SmartStock.ViewModels.InventoryData.Products.First(p => p.Id == transaction.ProductId);
+        @foreach (var transaction in Model.RecentTransactions) { var product = Model.Products.First(p => p.Id == transaction.ProductId);
             <tr><td class="product">@product.Name<small>@product.Sku</small></td><td>@transaction.Reference</td><td><span class="badge-soft @(transaction.Type == "IN" ? "move-in" : "move-out")">Stock @transaction.Type</span></td><td>@(transaction.Type == "IN" ? "+" : "−")@transaction.Quantity</td><td>@transaction.Date.ToString("MMM d")</td></tr> }
         </tbody></table></div>
     </article>

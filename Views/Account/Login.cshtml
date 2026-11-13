@@ -1,0 +1,89 @@
+@model SmartStock.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · SmartStock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script>
+        (function () {
+            const stored = localStorage.getItem('smartstock-theme');
+            const theme = stored || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        }());
+    </script>
+</head>
+<body class="auth-body">
+    <div class="auth-shell">
+        <div class="auth-card auth-card-wide">
+            <div class="auth-brand">
+                <span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>
+                <div>
+                    <strong>SmartStock</strong>
+                    <small>Inventory Platform</small>
+                </div>
+            </div>
+
+            <div class="auth-intro">
+                <h1>Welcome back</h1>
+                <p>Sign in to manage stock, suppliers and inventory health.</p>
+            </div>
+
+            @if (TempData["SuccessMessage"] is string successMessage)
+            {
+                <div class="alert alert-success mt-3">@successMessage</div>
+            }
+
+            <form asp-action="Login" asp-controller="Account" method="post" class="auth-form">
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="field-group">
+                    <label asp-for="Email"></label>
+                    <div class="input-with-icon">
+                        <i class="bi bi-envelope"></i>
+                        <input asp-for="Email" class="form-control" autocomplete="email" placeholder="name@example.com" />
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="field-group">
+                    <label asp-for="Password"></label>
+                    <div class="input-with-icon input-with-action">
+                        <i class="bi bi-lock"></i>
+                        <input asp-for="Password" class="form-control password-field" type="password" autocomplete="current-password" placeholder="Enter your password" />
+                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="auth-row">
+                    <label class="checkbox-toggle">
+                        <input asp-for="RememberMe" />
+                        <span>@Html.DisplayNameFor(m => m.RememberMe)</span>
+                    </label>
+                    <a asp-controller="Account" asp-action="Register" class="text-link">Create account</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 auth-submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

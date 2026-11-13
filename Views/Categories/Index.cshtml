@@ -1,0 +1,40 @@
+@model IReadOnlyList<SmartStock.ViewModels.InventoryGroupViewModel>
+@{
+    ViewData["Title"] = "Categories";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">INVENTORY ORGANIZATION</span>
+        <h1>Categories</h1>
+        <p>Category summaries are based on the products currently in your catalog.</p>
+    </div>
+    <a class="btn btn-primary" asp-controller="Products" asp-action="Create"><i class="bi bi-plus-lg"></i> Add product</a>
+</section>
+<section class="panel">
+    <div class="panel-head"><div><h2>Product categories</h2><p>@Model.Count categories</p></div></div>
+    @if (Model.Count == 0)
+    {
+        <div class="empty">No categories yet. Add a product to create the first category.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead><tr><th>Category</th><th>Products</th><th>Units on hand</th><th>Stock value</th><th>Low stock items</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var category in Model)
+                {
+                    <tr>
+                        <td class="product">@category.Name</td>
+                        <td>@category.ProductCount</td>
+                        <td>@category.UnitsOnHand</td>
+                        <td>₹@category.StockValue.ToString("N2")</td>
+                        <td>@category.LowStockCount</td>
+                        <td><a class="btn btn-outline-secondary btn-sm" asp-controller="Products" asp-action="Index" asp-route-category="@category.Name">View products</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

@@ -1,0 +1,54 @@
+@model SmartStock.ViewModels.SettingsViewModel
+@{
+    ViewData["Title"] = "Settings";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">PREFERENCES</span>
+        <h1>Settings</h1>
+        <p>Manage your account details and application appearance.</p>
+    </div>
+</section>
+
+<div class="settings-grid">
+    <section class="panel settings-card">
+        <div class="panel-head">
+            <div>
+                <h2>Appearance</h2>
+                <p>Choose the theme for this browser.</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <div class="settings-preference">
+                <span class="settings-preference-icon"><i class="bi bi-circle-half"></i></span>
+                <div>
+                    <b>Color theme</b>
+                    <p data-theme-label>Light mode is on</p>
+                </div>
+                <button class="btn btn-outline-secondary" type="button" data-theme-toggle aria-pressed="false">
+                    <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                    <span>Toggle theme</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel settings-card">
+        <div class="panel-head">
+            <div>
+                <h2>Account information</h2>
+                <p>Your current SmartStock account.</p>
+            </div>
+        </div>
+        <div class="settings-card-body">
+            <dl class="account-details">
+                <div><dt>Name</dt><dd>@Model.FullName</dd></div>
+                <div><dt>Email</dt><dd>@Model.Email</dd></div>
+            </dl>
+            <div class="settings-links">
+                <a class="btn btn-outline-secondary" asp-controller="Account" asp-action="Profile"><i class="bi bi-person"></i> Edit profile</a>
+                <a class="btn btn-outline-secondary" asp-controller="Account" asp-action="Profile" asp-fragment="change-password"><i class="bi bi-shield-lock"></i> Change password</a>
+            </div>
+        </div>
+    </section>
+</div>
