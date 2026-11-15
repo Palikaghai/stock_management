@@ -47,7 +47,7 @@ public class ProductsController : Controller
     }
 
     [HttpGet]
-    public IActionResult Create() => View(new ProductFormViewModel());
+    public IActionResult Create() => View(PopulateFormOptions(new ProductFormViewModel()));
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -55,7 +55,7 @@ public class ProductsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return View(PopulateFormOptions(model));
         }
 
         try
@@ -64,8 +64,8 @@ public class ProductsController : Controller
         }
         catch (InvalidOperationException exception)
         {
-            ModelState.AddModelError(nameof(model.Sku), exception.Message);
-            return View(model);
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return View(PopulateFormOptions(model));
         }
 
         TempData["SuccessMessage"] = "Product created. Record an IN movement to add stock.";
@@ -81,7 +81,7 @@ public class ProductsController : Controller
             return NotFound();
         }
 
-        return View(new ProductFormViewModel
+        return View(PopulateFormOptions(new ProductFormViewModel
         {
             Id = product.Id,
             Name = product.Name,
@@ -90,7 +90,7 @@ public class ProductsController : Controller
             Supplier = product.Supplier,
             ReorderLevel = product.ReorderLevel,
             UnitCost = product.UnitCost
-        });
+        }));
     }
 
     [HttpPost]
@@ -99,7 +99,7 @@ public class ProductsController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return View(PopulateFormOptions(model));
         }
 
         try
@@ -108,8 +108,8 @@ public class ProductsController : Controller
         }
         catch (InvalidOperationException exception)
         {
-            ModelState.AddModelError(nameof(model.Sku), exception.Message);
-            return View(model);
+            ModelState.AddModelError(string.Empty, exception.Message);
+            return View(PopulateFormOptions(model));
         }
         catch (KeyNotFoundException)
         {
@@ -119,4 +119,17 @@ public class ProductsController : Controller
         TempData["SuccessMessage"] = "Product details updated.";
         return RedirectToAction(nameof(Index));
     }
+
+    private ProductFormViewModel PopulateFormOptions(ProductFormViewModel model) => new()
+    {
+        Id = model.Id,
+        Name = model.Name,
+        Sku = model.Sku,
+        Category = model.Category,
+        Supplier = model.Supplier,
+        ReorderLevel = model.ReorderLevel,
+        UnitCost = model.UnitCost,
+        Categories = _inventory.Categories,
+        Suppliers = _inventory.Suppliers
+    };
 }

@@ -8,13 +8,16 @@
         <h1>Suppliers</h1>
         <p>Supplier summaries are based on the products currently in your catalog.</p>
     </div>
-    <a class="btn btn-primary" asp-controller="Products" asp-action="Create"><i class="bi bi-plus-lg"></i> Add product</a>
+    <div class="transaction-actions">
+        <a class="btn btn-outline-secondary" asp-controller="Products" asp-action="Create"><i class="bi bi-box-seam"></i> Add product</a>
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Add supplier</a>
+    </div>
 </section>
 <section class="panel">
     <div class="panel-head"><div><h2>Inventory by supplier</h2><p>@Model.Count suppliers</p></div></div>
     @if (Model.Count == 0)
     {
-        <div class="empty">No suppliers yet. Add a product to create the first supplier.</div>
+        <div class="empty">No suppliers yet. Add a supplier or create a product and assign a supplier.</div>
     }
     else
     {

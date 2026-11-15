@@ -1,83 +1,175 @@
+using Microsoft.EntityFrameworkCore;
+using SmartStock.Data;
+using SmartStock.Models;
 using SmartStock.ViewModels;
 
 namespace SmartStock.Services;
 
 public sealed class InventoryStore
 {
-    private readonly object _sync = new();
-    private readonly List<InventoryProduct> _products = InventoryData.Products.ToList();
-    private readonly List<InventoryTransaction> _transactions = InventoryData.Transactions.ToList();
-    private int _nextProductId = InventoryData.Products.Max(product => product.Id) + 1;
+    private static readonly object InventoryLock = new();
+    private readonly ApplicationDbContext _dbContext;
 
-    public IReadOnlyList<InventoryProduct> Products
+    public InventoryStore(ApplicationDbContext dbContext)
     {
-        get { lock (_sync) return _products.ToArray(); }
+        _dbContext = dbContext;
     }
 
-    public IReadOnlyList<InventoryTransaction> Transactions
-    {
-        get { lock (_sync) return _transactions.OrderByDescending(transaction => transaction.Date).ToArray(); }
-    }
+    public IReadOnlyList<InventoryProduct> Products =>
+        _dbContext.InventoryProducts.AsNoTracking()
+            .OrderBy(product => product.Name)
+            .ToArray()
+            .Select(ToProduct)
+            .ToArray();
 
-    public IReadOnlyList<string> Categories
-    {
-        get { lock (_sync) return _products.Select(product => product.Category).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray(); }
-    }
+    public IReadOnlyList<InventoryTransaction> Transactions =>
+        _dbContext.InventoryTransactions.AsNoTracking()
+            .OrderByDescending(transaction => transaction.Date)
+            .ToArray()
+            .Select(ToTransaction)
+            .ToArray();
 
-    public IReadOnlyList<string> Suppliers
-    {
-        get { lock (_sync) return _products.Select(product => product.Supplier).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToArray(); }
-    }
+    public IReadOnlyList<string> Categories =>
+        _dbContext.InventoryProducts.AsNoTracking()
+            .Select(product => product.Category)
+            .Distinct()
+            .ToArray()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order()
+            .ToArray();
 
-    public InventoryProduct? FindProduct(int id)
+    public IReadOnlyList<string> Suppliers =>
+        _dbContext.InventorySuppliers.AsNoTracking()
+            .Select(supplier => supplier.Name)
+            .OrderBy(name => name)
+            .ToArray();
+
+    public void Initialize()
     {
-        lock (_sync)
+        if (!_dbContext.InventoryProducts.Any())
         {
-            return _products.FirstOrDefault(product => product.Id == id);
+            foreach (var supplier in InventoryData.Suppliers)
+            {
+                EnsureSupplierExists(supplier);
+            }
+
+            _dbContext.SaveChanges();
+
+            foreach (var product in InventoryData.Products)
+            {
+                _dbContext.InventoryProducts.Add(new InventoryProductEntity
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Sku = product.Sku,
+                    Category = product.Category,
+                    Supplier = product.Supplier,
+                    OnHand = product.OnHand,
+                    ReorderLevel = product.ReorderLevel,
+                    UnitCost = product.UnitCost
+                });
+            }
+
+            foreach (var transaction in InventoryData.Transactions)
+            {
+                _dbContext.InventoryTransactions.Add(new InventoryTransactionEntity
+                {
+                    Date = transaction.Date,
+                    Type = transaction.Type,
+                    ProductId = transaction.ProductId,
+                    Quantity = transaction.Quantity,
+                    Reference = transaction.Reference
+                });
+            }
+
+            _dbContext.SaveChanges();
+        }
+        else
+        {
+            foreach (var supplier in _dbContext.InventoryProducts.AsNoTracking()
+                         .Select(product => product.Supplier).Distinct().ToArray())
+            {
+                EnsureSupplierExists(supplier);
+            }
+
+            _dbContext.SaveChanges();
         }
     }
 
     public InventoryProduct CreateProduct(string name, string sku, string category, string supplier, int reorderLevel, decimal unitCost)
     {
-        lock (_sync)
+        lock (InventoryLock)
         {
-            EnsureSkuAvailable(sku, null);
-            var product = new InventoryProduct(_nextProductId++, name.Trim(), sku.Trim(), category.Trim(), supplier.Trim(), 0, reorderLevel, unitCost);
-            _products.Add(product);
-            return product;
+            var normalizedName = RequireValue(name, "Product name is required.");
+            var normalizedSku = RequireValue(sku, "SKU is required.");
+            var normalizedCategory = RequireValue(category, "Category is required.");
+            var normalizedSupplier = RequireValue(supplier, "Supplier is required.");
+            EnsureSkuAvailable(normalizedSku, null);
+            EnsureSupplierExists(normalizedSupplier);
+
+            var product = new InventoryProductEntity
+            {
+                Name = normalizedName,
+                Sku = normalizedSku,
+                Category = normalizedCategory,
+                Supplier = normalizedSupplier,
+                OnHand = 0,
+                ReorderLevel = reorderLevel,
+                UnitCost = unitCost
+            };
+            _dbContext.InventoryProducts.Add(product);
+            _dbContext.SaveChanges();
+            return ToProduct(product);
         }
     }
 
     public void UpdateProduct(int id, string name, string sku, string category, string supplier, int reorderLevel, decimal unitCost)
     {
-        lock (_sync)
+        lock (InventoryLock)
         {
-            var index = _products.FindIndex(product => product.Id == id);
-            if (index < 0)
+            var product = _dbContext.InventoryProducts.Find(id)
+                ?? throw new KeyNotFoundException($"Product {id} was not found.");
+            var normalizedSku = RequireValue(sku, "SKU is required.");
+            EnsureSkuAvailable(normalizedSku, id);
+            EnsureSupplierExists(RequireValue(supplier, "Supplier is required."));
+
+            product.Name = RequireValue(name, "Product name is required.");
+            product.Sku = normalizedSku;
+            product.Category = RequireValue(category, "Category is required.");
+            product.Supplier = supplier.Trim();
+            product.ReorderLevel = reorderLevel;
+            product.UnitCost = unitCost;
+            _dbContext.SaveChanges();
+        }
+    }
+
+    public void CreateSupplier(string name)
+    {
+        lock (InventoryLock)
+        {
+            var normalizedName = RequireValue(name, "Supplier name is required.");
+            if (_dbContext.InventorySuppliers.Any(supplier => supplier.Name == normalizedName))
             {
-                throw new KeyNotFoundException($"Product {id} was not found.");
+                throw new InvalidOperationException("A supplier with this name already exists.");
             }
 
-            EnsureSkuAvailable(sku, id);
-            var current = _products[index];
-            _products[index] = current with
-            {
-                Name = name.Trim(),
-                Sku = sku.Trim(),
-                Category = category.Trim(),
-                Supplier = supplier.Trim(),
-                ReorderLevel = reorderLevel,
-                UnitCost = unitCost
-            };
+            _dbContext.InventorySuppliers.Add(new InventorySupplierEntity { Name = normalizedName });
+            _dbContext.SaveChanges();
         }
+    }
+
+    public InventoryProduct? FindProduct(int id)
+    {
+        var product = _dbContext.InventoryProducts.AsNoTracking().FirstOrDefault(candidate => candidate.Id == id);
+        return product == null ? null : ToProduct(product);
     }
 
     public bool TryRecordMovement(int productId, string type, int quantity, string? reference, out string error)
     {
-        lock (_sync)
+        lock (InventoryLock)
         {
-            var index = _products.FindIndex(product => product.Id == productId);
-            if (index < 0)
+            var product = _dbContext.InventoryProducts.Find(productId);
+            if (product == null)
             {
                 error = "Select a valid product.";
                 return false;
@@ -89,7 +181,6 @@ public sealed class InventoryStore
                 return false;
             }
 
-            var product = _products[index];
             var isStockIn = string.Equals(type, "IN", StringComparison.Ordinal);
             if (!isStockIn && !string.Equals(type, "OUT", StringComparison.Ordinal))
             {
@@ -109,22 +200,57 @@ public sealed class InventoryStore
                 return false;
             }
 
-            var updatedQuantity = isStockIn ? product.OnHand + quantity : product.OnHand - quantity;
-            _products[index] = product with { OnHand = updatedQuantity };
             var movementReference = string.IsNullOrWhiteSpace(reference)
                 ? $"{(isStockIn ? "IN" : "OUT")}-{Guid.NewGuid():N}"[..11].ToUpperInvariant()
                 : reference.Trim();
-            _transactions.Add(new InventoryTransaction(DateTime.Now, type, productId, quantity, movementReference));
+            if (movementReference.Length > 60)
+            {
+                error = "Reference must be 60 characters or fewer.";
+                return false;
+            }
+
+            product.OnHand = isStockIn ? product.OnHand + quantity : product.OnHand - quantity;
+            _dbContext.InventoryTransactions.Add(new InventoryTransactionEntity
+            {
+                Date = DateTime.Now,
+                Type = type,
+                ProductId = productId,
+                Quantity = quantity,
+                Reference = movementReference
+            });
+            _dbContext.SaveChanges();
             error = string.Empty;
             return true;
         }
     }
 
+    private void EnsureSupplierExists(string name)
+    {
+        if (!_dbContext.InventorySuppliers.Any(supplier => supplier.Name == name))
+        {
+            _dbContext.InventorySuppliers.Add(new InventorySupplierEntity { Name = name });
+        }
+    }
+
     private void EnsureSkuAvailable(string sku, int? exceptId)
     {
-        if (_products.Any(product => product.Id != exceptId && string.Equals(product.Sku, sku.Trim(), StringComparison.OrdinalIgnoreCase)))
+        if (_dbContext.InventoryProducts.Any(product => product.Id != exceptId && product.Sku == sku))
         {
             throw new InvalidOperationException("A product with this SKU already exists.");
         }
     }
+
+    private static string RequireValue(string value, string error)
+    {
+        var normalizedValue = value?.Trim();
+        return string.IsNullOrWhiteSpace(normalizedValue)
+            ? throw new InvalidOperationException(error)
+            : normalizedValue;
+    }
+
+    private static InventoryProduct ToProduct(InventoryProductEntity product) =>
+        new(product.Id, product.Name, product.Sku, product.Category, product.Supplier, product.OnHand, product.ReorderLevel, product.UnitCost);
+
+    private static InventoryTransaction ToTransaction(InventoryTransactionEntity transaction) =>
+        new(transaction.Date, transaction.Type, transaction.ProductId, transaction.Quantity, transaction.Reference);
 }

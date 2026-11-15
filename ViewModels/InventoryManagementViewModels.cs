@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
+using SmartStock.ModelBinders;
 
 namespace SmartStock.ViewModels;
 
@@ -23,9 +25,20 @@ public sealed class ProductFormViewModel
     [Display(Name = "Reorder level")]
     public int ReorderLevel { get; set; }
 
-    [Range(typeof(decimal), "0.01", "1000000000")]
+    [Range(0.01, 1000000000)]
     [Display(Name = "Unit cost")]
+    [ModelBinder(BinderType = typeof(FlexibleDecimalModelBinder))]
     public decimal UnitCost { get; set; }
+
+    public IReadOnlyList<string> Categories { get; init; } = [];
+    public IReadOnlyList<string> Suppliers { get; init; } = [];
+}
+
+public sealed class SupplierFormViewModel
+{
+    [Required, StringLength(100)]
+    [Display(Name = "Supplier name")]
+    public string Name { get; set; } = string.Empty;
 }
 
 public sealed class ProductListViewModel

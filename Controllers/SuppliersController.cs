@@ -17,19 +17,50 @@ public class SuppliersController : Controller
 
     public IActionResult Index()
     {
-        var groups = _inventory.Products
+        var productGroups = _inventory.Products
             .GroupBy(product => product.Supplier, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new InventoryGroupViewModel
-            {
-                Name = group.Key,
-                ProductCount = group.Count(),
-                UnitsOnHand = group.Sum(product => product.OnHand),
-                StockValue = group.Sum(product => product.OnHand * product.UnitCost),
-                LowStockCount = group.Count(product => product.OnHand <= product.ReorderLevel)
-            })
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
+
+        var groups = _inventory.Suppliers
+            .Select(supplier => productGroups.TryGetValue(supplier, out var products)
+                ? new InventoryGroupViewModel
+                {
+                    Name = supplier,
+                    ProductCount = products.Length,
+                    UnitsOnHand = products.Sum(product => product.OnHand),
+                    StockValue = products.Sum(product => product.OnHand * product.UnitCost),
+                    LowStockCount = products.Count(product => product.OnHand <= product.ReorderLevel)
+                }
+                : new InventoryGroupViewModel { Name = supplier })
             .OrderBy(group => group.Name)
             .ToArray();
 
         return View(groups);
+    }
+
+    [HttpGet]
+    public IActionResult Create() => View(new SupplierFormViewModel());
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Create(SupplierFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            _inventory.CreateSupplier(model.Name);
+        }
+        catch (InvalidOperationException exception)
+        {
+            ModelState.AddModelError(nameof(model.Name), exception.Message);
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = "Supplier created.";
+        return RedirectToAction(nameof(Index));
     }
 }

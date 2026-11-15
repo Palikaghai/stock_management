@@ -1,0 +1,25 @@
+@model SmartStock.ViewModels.SupplierFormViewModel
+@{
+    ViewData["Title"] = "Add supplier";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">PARTNER DIRECTORY</span>
+        <h1>Add supplier</h1>
+        <p>Create a supplier now, then assign it to products in your catalog.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index"><i class="bi bi-arrow-left"></i> Suppliers</a>
+</section>
+<section class="panel product-form-panel">
+    <form asp-action="Create" method="post" class="settings-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="field-group">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" class="form-control" autocomplete="organization" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="profile-actions">
+            <button type="submit" class="btn btn-primary">Create supplier</button>
+        </div>
+    </form>
+</section>

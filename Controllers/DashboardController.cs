@@ -27,7 +27,9 @@ public class DashboardController : Controller
         var products = _inventory.Products;
         var transactions = _inventory.Transactions;
         var categories = _inventory.Categories;
-        var months = Enumerable.Range(0, 6).Select(i => new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(i - 5)).ToArray();
+        var today = DateTime.Today;
+        var week = Enumerable.Range(0, 7).Select(i => today.AddDays(i - 6)).ToArray();
+        var months = Enumerable.Range(0, 6).Select(i => new DateTime(today.Year, today.Month, 1).AddMonths(i - 5)).ToArray();
         return View(new DashboardViewModel
         {
             TotalProducts = products.Count,
@@ -39,9 +41,13 @@ public class DashboardController : Controller
             LowStockProducts = products.Where(p => p.OnHand <= p.ReorderLevel).OrderBy(p => p.OnHand).ToArray(),
             CategoryLabels = categories,
             CategoryValues = categories.Select(c => products.Where(p => p.Category == c).Sum(p => p.OnHand)).ToArray(),
-            MovementLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            StockInValues = [18, 12, 24, 8, 15, 10, 20],
-            StockOutValues = [9, 14, 11, 17, 8, 12, 6],
+            MovementLabels = week.Select(day => day.ToString("ddd")).ToArray(),
+            StockInValues = week.Select(day => transactions
+                .Where(transaction => transaction.Type == "IN" && transaction.Date.Date == day)
+                .Sum(transaction => transaction.Quantity)).ToArray(),
+            StockOutValues = week.Select(day => transactions
+                .Where(transaction => transaction.Type == "OUT" && transaction.Date.Date == day)
+                .Sum(transaction => transaction.Quantity)).ToArray(),
             ValuationValues = categories.Select(c => products.Where(p => p.Category == c).Sum(p => p.OnHand * p.UnitCost)).ToArray(),
             MonthLabels = months.Select(m => m.ToString("MMM")).ToArray(),
             MonthlyInValues = months.Select(m => transactions.Where(t => t.Type == "IN" && t.Date.Year == m.Year && t.Date.Month == m.Month).Sum(t => t.Quantity)).ToArray(),

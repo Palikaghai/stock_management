@@ -7,7 +7,7 @@
         week = Model.MovementLabels, stockIn = Model.StockInValues, stockOut = Model.StockOutValues,
         valuations = Model.ValuationValues, months = Model.MonthLabels, monthlyIn = Model.MonthlyInValues, monthlyOut = Model.MonthlyOutValues });
 }
-<section class="page-heading"><div><span class="eyebrow">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</span><h1>Good morning, @displayName ✦</h1><p>Demo inventory snapshot — connect your inventory data source when ready.</p></div><a class="btn btn-primary" asp-controller="Reports" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> View inventory report</a></section>
+<section class="page-heading"><div><span class="eyebrow">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</span><h1>Good morning, @displayName ✦</h1><p>Live inventory snapshot, updated from your saved product and stock activity.</p></div><a class="btn btn-primary" asp-controller="Reports" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> View inventory report</a></section>
 <section class="stats-grid">
     <article class="stat-card"><div class="stat-top">Total products <span class="stat-icon"><i class="bi bi-box-seam"></i></span></div><div class="stat-value">@Model.TotalProducts</div><div class="stat-note">Products tracked in this demo catalog</div></article>
     <article class="stat-card"><div class="stat-top">Total stock value <span class="stat-icon green"><i class="bi bi-currency-rupee"></i></span></div><div class="stat-value">₹@Model.TotalStockValue.ToString("N0")</div><div class="stat-note">Based on current on-hand stock</div></article>

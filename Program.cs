@@ -46,7 +46,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddSingleton<InventoryStore>();
+builder.Services.AddScoped<InventoryStore>();
 
 var app = builder.Build();
 
@@ -54,6 +54,8 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.EnsureCreated();
+    dbContext.EnsureInventoryTablesCreated();
+    scope.ServiceProvider.GetRequiredService<InventoryStore>().Initialize();
 }
 
 if (!app.Environment.IsDevelopment())
