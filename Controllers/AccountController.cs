@@ -261,6 +261,37 @@ public class AccountController : Controller
         return RedirectToAction(nameof(Profile));
     }
 
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveProfilePicture()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return Challenge();
+        }
+
+        var pictureClaim = (await _userManager.GetClaimsAsync(user))
+            .FirstOrDefault(claim => claim.Type == ApplicationUser.ProfilePictureClaimType);
+        if (pictureClaim == null)
+        {
+            return RedirectToAction(nameof(Profile));
+        }
+
+        var result = await _userManager.RemoveClaimAsync(user, pictureClaim);
+        if (!result.Succeeded)
+        {
+            TempData["ErrorMessage"] = $"Your profile picture could not be removed: {string.Join(" ", result.Errors.Select(error => error.Description))}";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        await _signInManager.RefreshSignInAsync(user);
+        DeleteProfilePictureFile(pictureClaim.Value);
+        TempData["SuccessMessage"] = "Your profile picture has been removed.";
+        return RedirectToAction(nameof(Profile));
+    }
+
     [HttpGet]
     [Authorize]
     public IActionResult ProfilePicture()
@@ -430,11 +461,11 @@ public class AccountController : Controller
         }
         catch (IOException exception)
         {
-            _logger.LogWarning(exception, "Could not remove a replaced profile picture.");
+            _logger.LogWarning(exception, "Could not remove a profile picture file.");
         }
         catch (UnauthorizedAccessException exception)
         {
-            _logger.LogWarning(exception, "Could not remove a replaced profile picture.");
+            _logger.LogWarning(exception, "Could not remove a profile picture file.");
         }
     }
 

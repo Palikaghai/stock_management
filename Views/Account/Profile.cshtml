@@ -18,17 +18,28 @@
 <div class="profile-grid">
     <section class="panel profile-panel">
         <div class="profile-header">
-            @if (Model.ProfilePictureUrl == null)
-            {
-                <div class="profile-avatar profile-picture-fallback" data-profile-picture-fallback>
-                    @(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim()[0].ToString().ToUpperInvariant() : "U")
-                </div>
-                <img id="profilePicturePreview" class="profile-avatar profile-avatar-image" alt="Profile picture preview" hidden />
-            }
-            else
-            {
-                <img id="profilePicturePreview" class="profile-avatar profile-avatar-image" src="@Model.ProfilePictureUrl" alt="Profile picture" />
-            }
+            <div class="profile-picture-actions">
+                <button class="profile-picture-button" type="button" data-profile-picture-trigger aria-label="Change profile picture" title="Change profile picture">
+                    @if (Model.ProfilePictureUrl == null)
+                    {
+                        <span class="profile-avatar profile-picture-fallback" data-profile-picture-fallback>
+                            @(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim()[0].ToString().ToUpperInvariant() : "U")
+                        </span>
+                        <img id="profilePicturePreview" class="profile-avatar profile-avatar-image" alt="" hidden />
+                    }
+                    else
+                    {
+                        <img id="profilePicturePreview" class="profile-avatar profile-avatar-image" src="@Model.ProfilePictureUrl" alt="" />
+                    }
+                    <span class="profile-picture-overlay" aria-hidden="true"><i class="bi bi-camera-fill"></i></span>
+                </button>
+                @if (Model.ProfilePictureUrl != null)
+                {
+                    <form asp-action="RemoveProfilePicture" asp-controller="Account" method="post" class="profile-picture-remove-form">
+                        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-trash3"></i> Remove picture</button>
+                    </form>
+                }
+            </div>
             <div>
                 <h2>@Model.FullName</h2>
                 <p>@Model.Email</p>
@@ -37,15 +48,9 @@
 
         <form asp-action="Profile" asp-controller="Account" method="post" enctype="multipart/form-data" class="settings-form">
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-            <div class="profile-picture-control">
-                <div class="profile-picture-field">
-                    <label asp-for="ProfilePicture"></label>
-                    <input asp-for="ProfilePicture" class="form-control" type="file" accept=".jpg,.jpeg,.png,.gif,.webp" data-profile-picture-input />
-                    <span asp-validation-for="ProfilePicture" class="text-danger"></span>
-                    <small>JPG, PNG, GIF, or WEBP. Maximum size: 5 MB.</small>
-                </div>
-            </div>
+            <input asp-for="ProfilePicture" class="d-none" type="file" accept=".jpg,.jpeg,.png,.gif,.webp" data-profile-picture-input />
+            <span asp-validation-for="ProfilePicture" class="text-danger"></span>
+            <small class="profile-picture-help">Click your profile picture to upload or change it. JPG, PNG, GIF, or WEBP, up to 5 MB.</small>
 
             <div class="form-row two-up">
                 <div>
@@ -135,10 +140,13 @@
     <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
     <script>
         (() => {
+            const trigger = document.querySelector("[data-profile-picture-trigger]");
             const input = document.querySelector("[data-profile-picture-input]");
             const preview = document.getElementById("profilePicturePreview");
             const fallback = document.querySelector("[data-profile-picture-fallback]");
             if (!input || !preview) return;
+
+            trigger?.addEventListener("click", () => input.click());
 
             let previewUrl = null;
             input.addEventListener("change", () => {
