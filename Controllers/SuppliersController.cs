@@ -63,4 +63,66 @@ public class SuppliersController : Controller
         TempData["SuccessMessage"] = "Supplier created.";
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpGet]
+    public IActionResult Edit(string name)
+    {
+        var supplier = _inventory.Suppliers
+            .FirstOrDefault(candidate => string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase));
+        if (supplier == null)
+        {
+            return NotFound();
+        }
+
+        return View(new SupplierFormViewModel { Name = supplier, OriginalName = supplier });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Edit(SupplierFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            _inventory.UpdateSupplier(model.OriginalName, model.Name);
+        }
+        catch (InvalidOperationException exception)
+        {
+            ModelState.AddModelError(nameof(model.Name), exception.Message);
+            return View(model);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        TempData["SuccessMessage"] = "Supplier updated.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Delete(string name)
+    {
+        try
+        {
+            _inventory.DeleteSupplier(name);
+        }
+        catch (InvalidOperationException exception)
+        {
+            TempData["ErrorMessage"] = exception.Message;
+            return RedirectToAction(nameof(Index));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        TempData["SuccessMessage"] = "Supplier deleted.";
+        return RedirectToAction(nameof(Index));
+    }
 }

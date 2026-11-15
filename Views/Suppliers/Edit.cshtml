@@ -1,0 +1,26 @@
+@model SmartStock.ViewModels.SupplierFormViewModel
+@{
+    ViewData["Title"] = "Edit supplier";
+}
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">PARTNER DIRECTORY</span>
+        <h1>Edit supplier</h1>
+        <p>Changing this name updates the supplier assigned to its products.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index"><i class="bi bi-arrow-left"></i> Suppliers</a>
+</section>
+<section class="panel product-form-panel">
+    <form asp-action="Edit" method="post" class="settings-form">
+        <input asp-for="OriginalName" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="field-group">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" class="form-control" autocomplete="organization" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="profile-actions">
+            <button type="submit" class="btn btn-primary">Save supplier</button>
+        </div>
+    </form>
+</section>

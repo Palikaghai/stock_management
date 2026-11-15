@@ -39,6 +39,8 @@ public sealed class SupplierFormViewModel
     [Required, StringLength(100)]
     [Display(Name = "Supplier name")]
     public string Name { get; set; } = string.Empty;
+
+    public string OriginalName { get; set; } = string.Empty;
 }
 
 public sealed class ProductListViewModel

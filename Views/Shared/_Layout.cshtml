@@ -6,6 +6,10 @@
         ?? User.Identity?.Name
         ?? "User";
     var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? User.Identity?.Name;
+    var profilePictureName = User.FindFirst(SmartStock.Models.ApplicationUser.ProfilePictureClaimType)?.Value;
+    var profilePictureUrl = string.IsNullOrWhiteSpace(profilePictureName)
+        ? null
+        : Url.Action("ProfilePicture", "Account", new { v = profilePictureName });
     var initials = string.Join("", displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
         .Take(2).Select(part => char.ToUpperInvariant(part[0])));
     if (string.IsNullOrWhiteSpace(initials))
@@ -55,7 +59,14 @@
                 <button type="submit" class="logout-link"><i class="bi bi-box-arrow-right"></i> Logout</button>
             </form>
             <div class="profile">
-                <span aria-hidden="true">@initials</span>
+                @if (profilePictureUrl == null)
+                {
+                    <span aria-hidden="true">@initials</span>
+                }
+                else
+                {
+                    <img class="avatar avatar-image" src="@profilePictureUrl" alt="" />
+                }
                 <div>
                     <b>@displayName</b>
                     <small>@email</small>
@@ -80,12 +91,26 @@
             {
                 <div class="profile-menu" data-profile-menu>
                     <button class="profile-menu-trigger" type="button" aria-label="Open profile menu" aria-expanded="false" aria-controls="profileDropdown" data-profile-trigger>
-                        <span class="avatar" aria-hidden="true">@initials</span>
+                        @if (profilePictureUrl == null)
+                        {
+                            <span class="avatar" aria-hidden="true">@initials</span>
+                        }
+                        else
+                        {
+                            <img class="avatar avatar-image" src="@profilePictureUrl" alt="" />
+                        }
                         <i class="bi bi-chevron-down" aria-hidden="true"></i>
                     </button>
                     <div class="profile-dropdown" id="profileDropdown" data-profile-dropdown hidden>
                         <div class="profile-dropdown-user">
-                            <span class="avatar" aria-hidden="true">@initials</span>
+                            @if (profilePictureUrl == null)
+                            {
+                                <span class="avatar" aria-hidden="true">@initials</span>
+                            }
+                            else
+                            {
+                                <img class="avatar avatar-image" src="@profilePictureUrl" alt="" />
+                            }
                             <span class="profile-dropdown-identity"><b>@displayName</b><small>@email</small></span>
                         </div>
                         <a asp-controller="Account" asp-action="Profile"><i class="bi bi-person"></i> My Profile</a>

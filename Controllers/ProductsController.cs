@@ -120,6 +120,28 @@ public class ProductsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Delete(int id)
+    {
+        try
+        {
+            _inventory.DeleteProduct(id);
+        }
+        catch (InvalidOperationException exception)
+        {
+            TempData["ErrorMessage"] = exception.Message;
+            return RedirectToAction(nameof(Index));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        TempData["SuccessMessage"] = "Product deleted.";
+        return RedirectToAction(nameof(Index));
+    }
+
     private ProductFormViewModel PopulateFormOptions(ProductFormViewModel model) => new()
     {
         Id = model.Id,

@@ -143,6 +143,22 @@ public sealed class InventoryStore
         }
     }
 
+    public void DeleteProduct(int id)
+    {
+        lock (InventoryLock)
+        {
+            var product = _dbContext.InventoryProducts.Find(id)
+                ?? throw new KeyNotFoundException($"Product {id} was not found.");
+            if (_dbContext.InventoryTransactions.Any(transaction => transaction.ProductId == id))
+            {
+                throw new InvalidOperationException("This product has transaction history and cannot be deleted.");
+            }
+
+            _dbContext.InventoryProducts.Remove(product);
+            _dbContext.SaveChanges();
+        }
+    }
+
     public void CreateSupplier(string name)
     {
         lock (InventoryLock)
@@ -154,6 +170,64 @@ public sealed class InventoryStore
             }
 
             _dbContext.InventorySuppliers.Add(new InventorySupplierEntity { Name = normalizedName });
+            _dbContext.SaveChanges();
+        }
+    }
+
+    public void UpdateSupplier(string currentName, string newName)
+    {
+        lock (InventoryLock)
+        {
+            var normalizedCurrentName = RequireValue(currentName, "Supplier name is required.");
+            var normalizedNewName = RequireValue(newName, "Supplier name is required.");
+            var supplier = _dbContext.InventorySuppliers
+                .FirstOrDefault(candidate => candidate.Name == normalizedCurrentName)
+                ?? throw new KeyNotFoundException("The supplier was not found.");
+
+            if (string.Equals(supplier.Name, normalizedNewName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (_dbContext.InventorySuppliers.Any(candidate => candidate.Name == normalizedNewName))
+            {
+                throw new InvalidOperationException("A supplier with this name already exists.");
+            }
+
+            using var transaction = _dbContext.Database.BeginTransaction();
+            _dbContext.InventorySuppliers.Add(new InventorySupplierEntity { Name = normalizedNewName });
+            _dbContext.SaveChanges();
+
+            var products = _dbContext.InventoryProducts
+                .Where(product => product.Supplier == supplier.Name)
+                .ToArray();
+            foreach (var product in products)
+            {
+                product.Supplier = normalizedNewName;
+            }
+
+            _dbContext.SaveChanges();
+            _dbContext.InventorySuppliers.Remove(supplier);
+            _dbContext.SaveChanges();
+            transaction.Commit();
+        }
+    }
+
+    public void DeleteSupplier(string name)
+    {
+        lock (InventoryLock)
+        {
+            var normalizedName = RequireValue(name, "Supplier name is required.");
+            var supplier = _dbContext.InventorySuppliers
+                .FirstOrDefault(candidate => candidate.Name == normalizedName)
+                ?? throw new KeyNotFoundException("The supplier was not found.");
+
+            if (_dbContext.InventoryProducts.Any(product => product.Supplier == supplier.Name))
+            {
+                throw new InvalidOperationException("This supplier is assigned to products. Reassign or delete those products first.");
+            }
+
+            _dbContext.InventorySuppliers.Remove(supplier);
             _dbContext.SaveChanges();
         }
     }

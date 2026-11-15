@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# User-uploaded profile pictures
+App_Data/ProfilePictures/
+
 # User-specific files
 *.rsuser
 *.suo

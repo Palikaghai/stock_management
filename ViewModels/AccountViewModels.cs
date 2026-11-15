@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace SmartStock.ViewModels;
 
@@ -65,6 +66,12 @@ public class ProfileViewModel
     [Phone]
     [Display(Name = "Phone number")]
     public string? PhoneNumber { get; set; }
+
+    [Display(Name = "Profile picture")]
+    public IFormFile? ProfilePicture { get; set; }
+
+    [BindNever]
+    public string? ProfilePictureUrl { get; set; }
 }
 
 public class ChangePasswordViewModel

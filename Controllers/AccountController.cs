@@ -1,4 +1,7 @@
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SmartStock.Models;
@@ -8,13 +11,23 @@ namespace SmartStock.Controllers;
 
 public class AccountController : Controller
 {
+    private const long MaxProfilePictureSize = 5 * 1024 * 1024;
+    private const long MaxProfilePictureRequestSize = MaxProfilePictureSize + 64 * 1024;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<AccountController> _logger;
 
-    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public AccountController(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        IWebHostEnvironment environment,
+        ILogger<AccountController> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _environment = environment;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -133,25 +146,18 @@ public class AccountController : Controller
             return Challenge();
         }
 
-        var model = new ProfileViewModel
-        {
-            FullName = user.FullName ?? string.Empty,
-            UserName = user.UserName ?? string.Empty,
-            Email = user.Email ?? string.Empty,
-            PhoneNumber = user.PhoneNumber
-        };
-
-        return View(model);
+        return View(CreateProfileViewModel(user));
     }
 
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(MaxProfilePictureRequestSize)]
     public async Task<IActionResult> Profile(ProfileViewModel model)
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return ProfileView(model);
         }
 
         var user = await _userManager.GetUserAsync(User);
@@ -160,11 +166,19 @@ public class AccountController : Controller
             return Challenge();
         }
 
+        var pictureExtension = model.ProfilePicture == null
+            ? null
+            : await ValidateProfilePictureAsync(model.ProfilePicture);
+        if (model.ProfilePicture != null && pictureExtension == null)
+        {
+            return ProfileView(model);
+        }
+
         var emailExists = await _userManager.FindByEmailAsync(model.Email);
         if (emailExists != null && !string.Equals(emailExists.Id, user.Id, StringComparison.Ordinal))
         {
             ModelState.AddModelError(nameof(model.Email), "This email address is already associated with another account.");
-            return View(model);
+            return ProfileView(model);
         }
 
         user.FullName = model.FullName.Trim();
@@ -181,7 +195,7 @@ public class AccountController : Controller
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
 
-                return View(model);
+                return ProfileView(model);
             }
         }
 
@@ -196,7 +210,7 @@ public class AccountController : Controller
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
 
-                return View(model);
+                return ProfileView(model);
             }
         }
 
@@ -208,12 +222,58 @@ public class AccountController : Controller
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            return View(model);
+            return ProfileView(model);
         }
 
-        await _signInManager.RefreshSignInAsync(user);
+        if (model.ProfilePicture != null && pictureExtension != null)
+        {
+            var newFileName = await SaveProfilePictureAsync(model.ProfilePicture, pictureExtension);
+            var existingPictureClaim = (await _userManager.GetClaimsAsync(user))
+                .FirstOrDefault(claim => claim.Type == ApplicationUser.ProfilePictureClaimType);
+            var newPictureClaim = new Claim(ApplicationUser.ProfilePictureClaimType, newFileName);
+            var claimResult = existingPictureClaim == null
+                ? await _userManager.AddClaimAsync(user, newPictureClaim)
+                : await _userManager.ReplaceClaimAsync(user, existingPictureClaim, newPictureClaim);
+
+            if (!claimResult.Succeeded)
+            {
+                DeleteProfilePictureFile(newFileName);
+                foreach (var error in claimResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return ProfileView(model);
+            }
+
+            await _signInManager.RefreshSignInAsync(user);
+            if (existingPictureClaim != null && existingPictureClaim.Value != newFileName)
+            {
+                DeleteProfilePictureFile(existingPictureClaim.Value);
+            }
+        }
+        else
+        {
+            await _signInManager.RefreshSignInAsync(user);
+        }
+
         TempData["SuccessMessage"] = "Your profile has been updated successfully.";
         return RedirectToAction(nameof(Profile));
+    }
+
+    [HttpGet]
+    [Authorize]
+    public IActionResult ProfilePicture()
+    {
+        var fileName = User.FindFirstValue(ApplicationUser.ProfilePictureClaimType);
+        if (!TryGetProfilePictureLocation(fileName, out var path, out var contentType))
+        {
+            return NotFound();
+        }
+
+        Response.Headers.CacheControl = "private, max-age=3600";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        return PhysicalFile(path, contentType);
     }
 
     [HttpPost]
@@ -229,15 +289,7 @@ public class AccountController : Controller
                 return Challenge();
             }
 
-            var profileModel = new ProfileViewModel
-            {
-                FullName = currentUser.FullName ?? string.Empty,
-                UserName = currentUser.UserName ?? string.Empty,
-                Email = currentUser.Email ?? string.Empty,
-                PhoneNumber = currentUser.PhoneNumber
-            };
-
-            return View("Profile", profileModel);
+            return View("Profile", CreateProfileViewModel(currentUser));
         }
 
         var user = await _userManager.GetUserAsync(User);
@@ -254,13 +306,7 @@ public class AccountController : Controller
                 ModelState.AddModelError(string.Empty, error.Description);
             }
 
-            return View("Profile", new ProfileViewModel
-            {
-                FullName = user.FullName ?? string.Empty,
-                UserName = user.UserName ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber
-            });
+            return View("Profile", CreateProfileViewModel(user));
         }
 
         await _signInManager.RefreshSignInAsync(user);
@@ -277,4 +323,155 @@ public class AccountController : Controller
 
         return RedirectToAction("Index", "Dashboard");
     }
+
+    private ProfileViewModel CreateProfileViewModel(ApplicationUser user) => new()
+    {
+        FullName = user.FullName ?? string.Empty,
+        UserName = user.UserName ?? string.Empty,
+        Email = user.Email ?? string.Empty,
+        PhoneNumber = user.PhoneNumber,
+        ProfilePictureUrl = GetProfilePictureUrl()
+    };
+
+    private IActionResult ProfileView(ProfileViewModel model)
+    {
+        model.ProfilePictureUrl = GetProfilePictureUrl();
+        return View(nameof(Profile), model);
+    }
+
+    private string? GetProfilePictureUrl()
+    {
+        var fileName = User.FindFirstValue(ApplicationUser.ProfilePictureClaimType);
+        return TryGetProfilePictureLocation(fileName, out _, out _)
+            ? Url.Action(nameof(ProfilePicture), new { v = fileName })
+            : null;
+    }
+
+    private async Task<string?> ValidateProfilePictureAsync(IFormFile picture)
+    {
+        if (picture.Length == 0)
+        {
+            ModelState.AddModelError(nameof(ProfileViewModel.ProfilePicture), "Choose an image to upload.");
+            return null;
+        }
+
+        if (picture.Length > MaxProfilePictureSize)
+        {
+            ModelState.AddModelError(nameof(ProfileViewModel.ProfilePicture), "The profile picture must be 5 MB or smaller.");
+            return null;
+        }
+
+        var header = new byte[12];
+        await using var stream = picture.OpenReadStream();
+        var bytesRead = await stream.ReadAsync(header.AsMemory(), HttpContext.RequestAborted);
+        var extension = GetImageExtension(header, bytesRead);
+        if (extension == null)
+        {
+            ModelState.AddModelError(nameof(ProfileViewModel.ProfilePicture), "Upload a valid JPG, PNG, GIF, or WEBP image.");
+        }
+
+        return extension;
+    }
+
+    private static string? GetImageExtension(byte[] header, int bytesRead)
+    {
+        if (bytesRead >= 3 && header[0] == 0xff && header[1] == 0xd8 && header[2] == 0xff)
+        {
+            return ".jpg";
+        }
+
+        if (bytesRead >= 8 &&
+            header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4e && header[3] == 0x47 &&
+            header[4] == 0x0d && header[5] == 0x0a && header[6] == 0x1a && header[7] == 0x0a)
+        {
+            return ".png";
+        }
+
+        if (bytesRead >= 6)
+        {
+            var signature = Encoding.ASCII.GetString(header, 0, 6);
+            if (signature is "GIF87a" or "GIF89a")
+            {
+                return ".gif";
+            }
+        }
+
+        if (bytesRead >= 12 &&
+            Encoding.ASCII.GetString(header, 0, 4) == "RIFF" &&
+            Encoding.ASCII.GetString(header, 8, 4) == "WEBP")
+        {
+            return ".webp";
+        }
+
+        return null;
+    }
+
+    private async Task<string> SaveProfilePictureAsync(IFormFile picture, string extension)
+    {
+        var directory = ProfilePictureDirectory;
+        Directory.CreateDirectory(directory);
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var path = Path.Combine(directory, fileName);
+        await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous);
+        await picture.CopyToAsync(stream, HttpContext.RequestAborted);
+        return fileName;
+    }
+
+    private void DeleteProfilePictureFile(string fileName)
+    {
+        if (!TryGetProfilePictureLocation(fileName, out var path, out _))
+        {
+            return;
+        }
+
+        try
+        {
+            System.IO.File.Delete(path);
+        }
+        catch (IOException exception)
+        {
+            _logger.LogWarning(exception, "Could not remove a replaced profile picture.");
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            _logger.LogWarning(exception, "Could not remove a replaced profile picture.");
+        }
+    }
+
+    private bool TryGetProfilePictureLocation(string? fileName, out string path, out string contentType)
+    {
+        path = string.Empty;
+        contentType = string.Empty;
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return false;
+        }
+
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        var fileId = Path.GetFileNameWithoutExtension(fileName);
+        if (!Guid.TryParseExact(fileId, "N", out _) ||
+            Path.GetFileName(fileName) != fileName ||
+            extension is not (".jpg" or ".png" or ".gif" or ".webp"))
+        {
+            return false;
+        }
+
+        path = Path.Combine(ProfilePictureDirectory, fileName);
+        if (!System.IO.File.Exists(path))
+        {
+            return false;
+        }
+
+        contentType = extension switch
+        {
+            ".jpg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => throw new InvalidOperationException("Unsupported profile picture format.")
+        };
+        return true;
+    }
+
+    private string ProfilePictureDirectory => Path.Combine(_environment.ContentRootPath, "App_Data", "ProfilePictures");
 }

@@ -18,15 +18,34 @@
 <div class="profile-grid">
     <section class="panel profile-panel">
         <div class="profile-header">
-            <div class="profile-avatar">@(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim()[0].ToString().ToUpperInvariant() : "U")</div>
+            @if (Model.ProfilePictureUrl == null)
+            {
+                <div class="profile-avatar profile-picture-fallback" data-profile-picture-fallback>
+                    @(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim()[0].ToString().ToUpperInvariant() : "U")
+                </div>
+                <img id="profilePicturePreview" class="profile-avatar profile-avatar-image" alt="Profile picture preview" hidden />
+            }
+            else
+            {
+                <img id="profilePicturePreview" class="profile-avatar profile-avatar-image" src="@Model.ProfilePictureUrl" alt="Profile picture" />
+            }
             <div>
                 <h2>@Model.FullName</h2>
                 <p>@Model.Email</p>
             </div>
         </div>
 
-        <form asp-action="Profile" asp-controller="Account" method="post" class="settings-form">
+        <form asp-action="Profile" asp-controller="Account" method="post" enctype="multipart/form-data" class="settings-form">
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="profile-picture-control">
+                <div class="profile-picture-field">
+                    <label asp-for="ProfilePicture"></label>
+                    <input asp-for="ProfilePicture" class="form-control" type="file" accept=".jpg,.jpeg,.png,.gif,.webp" data-profile-picture-input />
+                    <span asp-validation-for="ProfilePicture" class="text-danger"></span>
+                    <small>JPG, PNG, GIF, or WEBP. Maximum size: 5 MB.</small>
+                </div>
+            </div>
 
             <div class="form-row two-up">
                 <div>
@@ -114,4 +133,23 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        (() => {
+            const input = document.querySelector("[data-profile-picture-input]");
+            const preview = document.getElementById("profilePicturePreview");
+            const fallback = document.querySelector("[data-profile-picture-fallback]");
+            if (!input || !preview) return;
+
+            let previewUrl = null;
+            input.addEventListener("change", () => {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.hidden = false;
+                if (fallback) fallback.hidden = true;
+            });
+        })();
+    </script>
 }
