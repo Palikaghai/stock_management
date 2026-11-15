@@ -1,0 +1,108 @@
+@model SmartStock.ViewModels.ProductFormViewModel
+@{
+    ViewData["Title"] = "Add Product";
+}
+
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">CATALOG / PRODUCTS</span>
+        <h1>Add New Product</h1>
+        <p>Register a new product with SKU, pricing, category classification and stock tracking thresholds.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index">
+        <i class="bi bi-arrow-left"></i> Back to Products
+    </a>
+</section>
+
+<div class="form-card">
+    <div class="form-card-head">
+        <h2>Product Details</h2>
+        <p>All fields marked with <span class="required-star">*</span> are mandatory.</p>
+    </div>
+
+    <form method="post" asp-action="Create" class="form-card-body" id="createProductForm">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert-danger" role="alert"></div>
+
+        <div class="form-grid-2">
+            <!-- Product Name -->
+            <div class="form-group">
+                <label asp-for="Name">Product Name <span class="required-star">*</span></label>
+                <input asp-for="Name" class="form-control" placeholder="e.g. Ergonomic Office Chair" autofocus />
+                <span asp-validation-for="Name" class="text-danger form-hint"></span>
+            </div>
+
+            <!-- SKU -->
+            <div class="form-group">
+                <label asp-for="Sku">SKU (Stock Keeping Unit) <span class="required-star">*</span></label>
+                <input asp-for="Sku" class="form-control text-uppercase" placeholder="e.g. FUR-3040" />
+                <span asp-validation-for="Sku" class="text-danger form-hint"></span>
+                <div class="form-hint">Unique identifier code, alphanumeric with hyphens or underscores.</div>
+            </div>
+        </div>
+
+        <div class="form-grid-2">
+            <!-- Category -->
+            <div class="form-group">
+                <label asp-for="CategoryId">Category <span class="required-star">*</span></label>
+                <select asp-for="CategoryId" asp-items="Model.CategoryOptions" class="form-select">
+                    <option value="">-- Select a Category --</option>
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger form-hint"></span>
+            </div>
+
+            <!-- Unit Price -->
+            <div class="form-group">
+                <label asp-for="UnitPrice">Unit Price (₹) <span class="required-star">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text" style="font-size: 11px; background: #f8fafc; border-color: #e5eaf1;">₹</span>
+                    <input asp-for="UnitPrice" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" />
+                </div>
+                <span asp-validation-for="UnitPrice" class="text-danger form-hint"></span>
+                <div class="form-hint">Cost per individual unit. Must not be negative.</div>
+            </div>
+        </div>
+
+        <div class="form-grid-2">
+            <!-- Initial Quantity -->
+            <div class="form-group">
+                <label asp-for="Quantity">Initial On-Hand Quantity <span class="required-star">*</span></label>
+                <input asp-for="Quantity" type="number" min="0" class="form-control" placeholder="0" />
+                <span asp-validation-for="Quantity" class="text-danger form-hint"></span>
+                <div class="form-hint">Current physical stock quantity. Must be non-negative.</div>
+            </div>
+
+            <!-- Reorder Level -->
+            <div class="form-group">
+                <label asp-for="ReorderLevel">Reorder Threshold Level <span class="required-star">*</span></label>
+                <input asp-for="ReorderLevel" type="number" min="0" class="form-control" placeholder="10" />
+                <span asp-validation-for="ReorderLevel" class="text-danger form-hint"></span>
+                <div class="form-hint">Triggers low-stock warning when quantity drops to or below this level.</div>
+            </div>
+        </div>
+
+        <!-- Supplier (Optional) -->
+        <div class="form-group">
+            <label asp-for="Supplier">Supplier Partner (Optional)</label>
+            <input asp-for="Supplier" class="form-control" placeholder="e.g. Apex Distribution" />
+            <span asp-validation-for="Supplier" class="text-danger form-hint"></span>
+            <div class="form-hint">Supplier information partner reference.</div>
+        </div>
+
+        <div class="form-actions">
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> Save Product
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/products.js" asp-append-version="true"></script>
+}
+

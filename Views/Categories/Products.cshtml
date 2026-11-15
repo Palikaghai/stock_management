@@ -1,0 +1,139 @@
+@model SmartStock.ViewModels.CategoryDetailViewModel
+@{
+    ViewData["Title"] = $"{Model.Name} - Products";
+}
+
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/categories.css" asp-append-version="true" />
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">CATALOG / CATEGORIES / PRODUCTS</span>
+        <h1>@Model.Name</h1>
+        <p>Category-wise product inventory breakdown and assigned catalog items.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a class="btn btn-outline-secondary" asp-action="Index">
+            <i class="bi bi-arrow-left"></i> All Categories
+        </a>
+        <a class="btn btn-primary" asp-controller="Products" asp-action="Create">
+            <i class="bi bi-plus-lg"></i> Add Product
+        </a>
+    </div>
+</section>
+
+<!-- Category Overview Hero -->
+<div class="category-hero">
+    <div class="category-hero-info">
+        <h2>
+            <i class="bi bi-folder2-open text-primary me-2"></i> @Model.Name
+        </h2>
+        <p>
+            @(string.IsNullOrWhiteSpace(Model.Description) ? "No description provided for this category." : Model.Description)
+        </p>
+    </div>
+    <div class="category-hero-stats">
+        <div class="cat-stat-chip">
+            <small>Associated Products</small>
+            <b>@Model.ProductCount</b>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.Id">
+            <i class="bi bi-pencil"></i> Edit Category
+        </a>
+    </div>
+</div>
+
+<!-- Products in Category Panel -->
+<section class="panel">
+    <div class="panel-head">
+        <div>
+            <h2>Products in @Model.Name</h2>
+            <p>@Model.ProductCount item(s) currently classified in this category</p>
+        </div>
+        <div>
+            <a class="btn btn-sm btn-outline-secondary" asp-controller="Products" asp-action="Index" asp-route-categoryId="@Model.Id">
+                <i class="bi bi-funnel"></i> View in Main Catalog
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Products.Count == 0)
+    {
+        <div class="empty">
+            <i class="bi bi-box" style="font-size: 28px; display: block; margin-bottom: 8px;"></i>
+            <span>No products have been assigned to this category yet.</span>
+            <div style="margin-top: 10px;">
+                <a class="btn btn-sm btn-primary" asp-controller="Products" asp-action="Create">
+                    <i class="bi bi-plus-lg"></i> Add a Product
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Product Name</th>
+                        <th>SKU</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Reorder Level</th>
+                        <th>Status</th>
+                        <th style="text-align: right; width: 95px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model.Products)
+                    {
+                        <tr>
+                            <td>#@product.Id</td>
+                            <td class="product">
+                                @product.Name
+                                @if (!string.IsNullOrWhiteSpace(product.Supplier))
+                                {
+                                    <small>Supplier: @product.Supplier</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="sku-badge">@product.Sku</span>
+                            </td>
+                            <td class="price-tag">
+                                ₹@product.UnitPrice.ToString("N2")
+                            </td>
+                            <td>
+                                <b>@product.Quantity</b>
+                            </td>
+                            <td>
+                                @product.ReorderLevel
+                            </td>
+                            <td>
+                                @if (product.IsLowStock)
+                                {
+                                    <span class="badge-soft"><i class="bi bi-exclamation-circle"></i> Low stock</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-soft move-in"><i class="bi bi-check2"></i> In stock</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="table-actions" style="justify-content: flex-end;">
+                                    <a class="btn-action btn-action-edit" asp-controller="Products" asp-action="Edit" asp-route-id="@product.Id" title="Edit product">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a class="btn-action btn-action-delete" asp-controller="Products" asp-action="Delete" asp-route-id="@product.Id" title="Delete product">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+

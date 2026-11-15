@@ -1,0 +1,294 @@
+@model SmartStock.ViewModels.ProductListViewModel
+@{
+    ViewData["Title"] = "Product Management";
+}
+
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">CATALOG &amp; INVENTORY</span>
+        <h1>Product Management</h1>
+        <p>Maintain catalog items, track on-hand quantities, reorder thresholds and pricing.</p>
+    </div>
+    <a class="btn btn-primary" asp-action="Create">
+        <i class="bi bi-plus-lg"></i> Add Product
+    </a>
+</section>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="ss-alert ss-alert-success" role="alert">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["SuccessMessage"]</span>
+        <button type="button" class="ss-alert-close" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="ss-alert ss-alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["ErrorMessage"]</span>
+        <button type="button" class="ss-alert-close" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+}
+
+<!-- Summary Statistics -->
+<section class="stats-grid">
+    <article class="stat-card">
+        <div class="stat-top">Catalog Products <span class="stat-icon"><i class="bi bi-box-seam"></i></span></div>
+        <div class="stat-value">@Model.TotalProductCount</div>
+        <div class="stat-note">Total active items in catalog</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-top">Total Stock Value <span class="stat-icon green"><i class="bi bi-currency-rupee"></i></span></div>
+        <div class="stat-value">₹@Model.TotalStockValue.ToString("N0")</div>
+        <div class="stat-note">Current inventory valuation</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-top">Low Stock Alerts <span class="stat-icon amber"><i class="bi bi-exclamation-triangle"></i></span></div>
+        <div class="stat-value">@Model.LowStockCount</div>
+        <div class="stat-note">At or below reorder threshold</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-top">Active Categories <span class="stat-icon violet"><i class="bi bi-tags"></i></span></div>
+        <div class="stat-value">@Model.AvailableCategories.Count</div>
+        <div class="stat-note">Available item categories</div>
+    </article>
+</section>
+
+<!-- Search and Category Filter -->
+<form class="product-filters" method="get" asp-action="Index" id="productSearchForm">
+    <div class="product-filter-grid">
+        <div class="filter-item">
+            <label for="searchInput">Search Products</label>
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" name="search"
+                       value="@Model.SearchTerm" placeholder="Search by name or SKU..." />
+            </div>
+        </div>
+
+        <div class="filter-item">
+            <label for="categoryFilter">Category Filter</label>
+            <select class="form-select" id="categoryFilter" name="categoryId" data-auto-filter="true">
+                <option value="">All Categories</option>
+                @foreach (var cat in Model.AvailableCategories)
+                {
+                    <option value="@cat.Id" selected="@(Model.CategoryFilter == cat.Id)">@cat.Name</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <button type="submit" class="btn btn-primary" title="Apply search and filter">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+
+        <div>
+            @if (!string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.CategoryFilter.HasValue)
+            {
+                <a class="btn btn-outline-secondary" asp-action="Index" title="Clear all filters">
+                    <i class="bi bi-arrow-counterclockwise"></i> Clear
+                </a>
+            }
+        </div>
+    </div>
+</form>
+
+<!-- Products Table Panel -->
+<section class="panel">
+    <div class="panel-head">
+        <div>
+            <h2>Product Catalog</h2>
+            <p>
+                Showing @(Model.TotalItems == 0 ? 0 : (Model.CurrentPage - 1) * Model.PageSize + 1)
+                to @Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalItems)
+                of @Model.TotalItems records
+                @if (!string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.CategoryFilter.HasValue)
+                {
+                    <span class="count">Filtered</span>
+                }
+            </p>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Create">
+            <i class="bi bi-plus-circle"></i> New Product
+        </a>
+    </div>
+
+    @if (Model.Products.Count == 0)
+    {
+        <div class="empty">
+            <i class="bi bi-inbox" style="font-size: 28px; display: block; margin-bottom: 8px;"></i>
+            @if (!string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.CategoryFilter.HasValue)
+            {
+                <span>No products matched your search or category filter.</span>
+                <div style="margin-top: 10px;">
+                    <a class="btn btn-sm btn-outline-secondary" asp-action="Index">Clear Search Filters</a>
+                </div>
+            }
+            else
+            {
+                <span>No products found in the database.</span>
+                <div style="margin-top: 10px;">
+                    <a class="btn btn-sm btn-primary" asp-action="Create">Add the First Product</a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Product Details</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Reorder Level</th>
+                        <th>Status</th>
+                        <th style="text-align: right; width: 95px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model.Products)
+                    {
+                        <tr>
+                            <td>#@product.Id</td>
+                            <td class="product">
+                                @product.Name
+                                @if (!string.IsNullOrWhiteSpace(product.Supplier))
+                                {
+                                    <small>Supplier: @product.Supplier</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="sku-badge">@product.Sku</span>
+                            </td>
+                            <td>
+                                <a asp-controller="Categories" asp-action="Products" asp-route-id="@product.CategoryId"
+                                   class="panel-link" title="View category products">
+                                    @product.CategoryName
+                                </a>
+                            </td>
+                            <td class="price-tag">
+                                ₹@product.UnitPrice.ToString("N2")
+                            </td>
+                            <td>
+                                <b>@product.Quantity</b>
+                            </td>
+                            <td>
+                                @product.ReorderLevel
+                            </td>
+                            <td>
+                                @if (product.IsLowStock)
+                                {
+                                    <span class="badge-soft"><i class="bi bi-exclamation-circle"></i> Low stock</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-soft move-in"><i class="bi bi-check2"></i> In stock</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="table-actions" style="justify-content: flex-end;">
+                                    <a class="btn-action btn-action-edit" asp-action="Edit" asp-route-id="@product.Id" title="Edit product">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn-action btn-action-delete"
+                                            data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"
+                                            data-id="@product.Id" data-name="@product.Name" data-type="product"
+                                            data-delete-url="@Url.Action("Delete", "Products", new { id = product.Id })"
+                                            title="Delete product">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="pagination-container">
+                <div>
+                    Page <b>@Model.CurrentPage</b> of <b>@Model.TotalPages</b>
+                </div>
+                <div class="pagination-controls">
+                    <a class="page-btn @(!Model.HasPreviousPage ? "disabled" : "")"
+                       asp-action="Index"
+                       asp-route-page="@(Model.CurrentPage - 1)"
+                       asp-route-search="@Model.SearchTerm"
+                       asp-route-categoryId="@Model.CategoryFilter"
+                       aria-label="Previous Page">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <a class="page-btn @(i == Model.CurrentPage ? "active" : "")"
+                           asp-action="Index"
+                           asp-route-page="@i"
+                           asp-route-search="@Model.SearchTerm"
+                           asp-route-categoryId="@Model.CategoryFilter">
+                            @i
+                        </a>
+                    }
+
+                    <a class="page-btn @(!Model.HasNextPage ? "disabled" : "")"
+                       asp-action="Index"
+                       asp-route-page="@(Model.CurrentPage + 1)"
+                       asp-route-search="@Model.SearchTerm"
+                       asp-route-categoryId="@Model.CategoryFilter"
+                       aria-label="Next Page">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        }
+    }
+</section>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: 1px solid #edf0f5; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid #f1f3f7; padding: 14px 18px;">
+                <h5 class="modal-title" id="deleteModalTitle" style="font: 700 14px Manrope, sans-serif; color: #17243b;">
+                    <i class="bi bi-exclamation-triangle text-danger me-1"></i> Confirm Product Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 18px; font-size: 12px; color: #57657a;">
+                <p>Are you sure you want to delete the product <strong data-item-name class="text-dark"></strong>?</p>
+                <div class="danger-notice" style="margin-bottom: 0;">
+                    <i class="bi bi-shield-lock"></i>
+                    <div>
+                        <strong>Safety Protection:</strong> Products with existing stock transactions or movement logs cannot be removed to maintain inventory data integrity.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #f1f3f7; padding: 12px 18px;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="modalDeleteForm" method="post" action="">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3"></i> Delete Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/products.js" asp-append-version="true"></script>
+}
+

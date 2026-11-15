@@ -1,0 +1,63 @@
+@model SmartStock.ViewModels.CategoryFormViewModel
+@{
+    ViewData["Title"] = $"Edit Category - {Model.Name}";
+}
+
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/categories.css" asp-append-version="true" />
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">CATALOG / CATEGORIES / EDIT</span>
+        <h1>Edit Category</h1>
+        <p>Update category name or descriptive specifications.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a class="btn btn-outline-secondary" asp-action="Index">
+            <i class="bi bi-arrow-left"></i> Back to Categories
+        </a>
+        <a class="btn btn-outline-secondary" asp-action="Products" asp-route-id="@Model.Id">
+            <i class="bi bi-boxes"></i> View Products
+        </a>
+    </div>
+</section>
+
+<div class="form-card">
+    <div class="form-card-head">
+        <h2>Editing Category #@Model.Id: @Model.Name</h2>
+        <p>Ensure the category name remains distinct from other existing categories.</p>
+    </div>
+
+    <form method="post" asp-action="Edit" asp-route-id="@Model.Id" class="form-card-body" id="editCategoryForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert-danger" role="alert"></div>
+
+        <div class="form-group">
+            <label asp-for="Name">Category Name <span class="required-star">*</span></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger form-hint"></span>
+            <div class="form-hint">Must be unique across all inventory categories (2 - 100 characters).</div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description">Description (Optional)</label>
+            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+            <span asp-validation-for="Description" class="text-danger form-hint"></span>
+            <div class="form-hint">Optional descriptive details up to 500 characters.</div>
+        </div>
+
+        <div class="form-actions">
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> Update Category
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

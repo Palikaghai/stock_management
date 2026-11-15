@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,35 +13,69 @@
 </head>
 <body>
 <aside class="sidebar" id="appSidebar">
-    <a class="brand" asp-controller="Dashboard" asp-action="Index"><span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span><span><b>smartstock</b><small>INVENTORY PLATFORM</small></span></a>
+    <a class="brand" asp-controller="Dashboard" asp-action="Index">
+        <span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>
+        <span><b>smartstock</b><small>INVENTORY PLATFORM</small></span>
+    </a>
+
     <div class="nav-caption">WORKSPACE</div>
+
     <nav class="side-nav" aria-label="Main navigation">
         <a class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-grid-1x2"></i> Dashboard</a>
-        <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-box"></i> Products</a>
-        <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-tags"></i> Categories</a>
+
+        <a class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")" asp-controller="Products" asp-action="Index"><i class="bi bi-box"></i> Products</a>
+
+        <a class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Categories" ? "active" : "")" asp-controller="Categories" asp-action="Index"><i class="bi bi-tags"></i> Categories</a>
+
         <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-truck"></i> Suppliers</a>
         <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-box-arrow-in-down"></i> Stock IN</a>
         <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-box-arrow-up-right"></i> Stock OUT</a>
         <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-arrow-left-right"></i> Transaction History</a>
+
         <a class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")" asp-controller="Reports" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
     </nav>
+
     <div class="sidebar-bottom">
         <div class="nav-caption">ACCOUNT</div>
         <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-person-circle"></i> Profile</a>
         <a class="muted-link" href="#" aria-disabled="true"><i class="bi bi-box-arrow-right"></i> Logout</a>
-        <div class="profile"><span>JD</span><div><b>Jordan Davis</b><small>Inventory manager</small></div></div>
+
+        <div class="profile">
+            <span>JD</span>
+            <div><b>Jordan Davis</b><small>Inventory manager</small></div>
+        </div>
     </div>
 </aside>
+
 <div class="main">
     <header class="topbar">
-        <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><i class="bi bi-list"></i></button>
-        <div><small>SMARTSTOCK / OPERATIONS</small><b>@ViewData["Title"]</b></div>
-        <div class="top-actions"><span><i class="bi bi-calendar3"></i> <span data-current-date></span></span><span class="avatar">JD</span></div>
+        <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <div>
+            <small>SMARTSTOCK / OPERATIONS</small>
+            <b>@ViewData["Title"]</b>
+        </div>
+
+        <div class="top-actions">
+            <span><i class="bi bi-calendar3"></i> <span data-current-date></span></span>
+            <span class="avatar">JD</span>
+        </div>
     </header>
-    <main class="content">@RenderBody()</main>
-    <footer>© @DateTime.Today.Year SmartStock <span>Inventory clarity, at a glance.</span></footer>
+
+    <main class="content">
+        @RenderBody()
+    </main>
+
+    <footer>
+        © @DateTime.Today.Year SmartStock
+        <span>Inventory clarity, at a glance.</span>
+    </footer>
 </div>
+
 <div class="backdrop"></div>
+
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)

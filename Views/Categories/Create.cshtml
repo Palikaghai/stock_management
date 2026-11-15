@@ -1,0 +1,57 @@
+@model SmartStock.ViewModels.CategoryFormViewModel
+@{
+    ViewData["Title"] = "Add Category";
+}
+
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/categories.css" asp-append-version="true" />
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">CATALOG / CATEGORIES</span>
+        <h1>Add New Category</h1>
+        <p>Define a new product classification to organize catalog inventory items.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-action="Index">
+        <i class="bi bi-arrow-left"></i> Back to Categories
+    </a>
+</section>
+
+<div class="form-card">
+    <div class="form-card-head">
+        <h2>Category Specification</h2>
+        <p>Fields marked with <span class="required-star">*</span> are mandatory.</p>
+    </div>
+
+    <form method="post" asp-action="Create" class="form-card-body" id="createCategoryForm">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="ss-alert ss-alert-danger" role="alert"></div>
+
+        <div class="form-group">
+            <label asp-for="Name">Category Name <span class="required-star">*</span></label>
+            <input asp-for="Name" class="form-control" placeholder="e.g. Networking Equipment" autofocus />
+            <span asp-validation-for="Name" class="text-danger form-hint"></span>
+            <div class="form-hint">Must be unique across all inventory categories (2 - 100 characters).</div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description">Description (Optional)</label>
+            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Brief description of the product group, use cases, or department handling."></textarea>
+            <span asp-validation-for="Description" class="text-danger form-hint"></span>
+            <div class="form-hint">Optional descriptive details up to 500 characters.</div>
+        </div>
+
+        <div class="form-actions">
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> Save Category
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

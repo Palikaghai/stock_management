@@ -1,0 +1,175 @@
+@model SmartStock.ViewModels.CategoryListViewModel
+@{
+    ViewData["Title"] = "Category Management";
+}
+
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/categories.css" asp-append-version="true" />
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow">CATALOG &amp; CLASSIFICATION</span>
+        <h1>Category Management</h1>
+        <p>Organize products into logical groups, monitor category density and manage classifications.</p>
+    </div>
+    <a class="btn btn-primary" asp-action="Create">
+        <i class="bi bi-plus-lg"></i> Add Category
+    </a>
+</section>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="ss-alert ss-alert-success" role="alert">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["SuccessMessage"]</span>
+        <button type="button" class="ss-alert-close" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="ss-alert ss-alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["ErrorMessage"]</span>
+        <button type="button" class="ss-alert-close" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+}
+
+<!-- Summary Statistics -->
+<section class="stats-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+    <article class="stat-card">
+        <div class="stat-top">Total Categories <span class="stat-icon violet"><i class="bi bi-tags"></i></span></div>
+        <div class="stat-value">@Model.TotalCategories</div>
+        <div class="stat-note">Configured catalog classifications</div>
+    </article>
+    <article class="stat-card">
+        <div class="stat-top">Assigned Products <span class="stat-icon"><i class="bi bi-boxes"></i></span></div>
+        <div class="stat-value">@Model.TotalAssociatedProducts</div>
+        <div class="stat-note">Products distributed across categories</div>
+    </article>
+</section>
+
+<!-- Categories Table Panel -->
+<section class="panel">
+    <div class="panel-head">
+        <div>
+            <h2>Category Directory</h2>
+            <p>@Model.TotalCategories total classifications configured</p>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Create">
+            <i class="bi bi-folder-plus"></i> New Category
+        </a>
+    </div>
+
+    @if (Model.Categories.Count == 0)
+    {
+        <div class="empty">
+            <i class="bi bi-tags" style="font-size: 28px; display: block; margin-bottom: 8px;"></i>
+            <span>No product categories exist in the database.</span>
+            <div style="margin-top: 10px;">
+                <a class="btn btn-sm btn-primary" asp-action="Create">Create the First Category</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 65px;">ID</th>
+                        <th>Category Name</th>
+                        <th>Description</th>
+                        <th>Associated Products</th>
+                        <th>Created Date</th>
+                        <th style="text-align: right; width: 130px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <tr>
+                            <td>#@category.Id</td>
+                            <td class="product">
+                                <a asp-action="Products" asp-route-id="@category.Id" style="font-weight: 700; color: #1e293b;">
+                                    <i class="bi bi-folder2-open text-primary me-1"></i> @category.Name
+                                </a>
+                            </td>
+                            <td>
+                                <div class="cat-desc" title="@category.Description">
+                                    @(string.IsNullOrWhiteSpace(category.Description) ? "—" : category.Description)
+                                </div>
+                            </td>
+                            <td>
+                                <a asp-action="Products" asp-route-id="@category.Id"
+                                   class="category-count-badge @(category.ProductCount == 0 ? "zero" : "")"
+                                   title="View products in this category">
+                                    <i class="bi bi-box-seam"></i> @category.ProductCount products
+                                </a>
+                            </td>
+                            <td>
+                                @category.CreatedAt.ToString("MMM d, yyyy")
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="table-actions" style="justify-content: flex-end;">
+                                    <a class="btn-action" asp-action="Products" asp-route-id="@category.Id" title="View category products">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a class="btn-action btn-action-edit" asp-action="Edit" asp-route-id="@category.Id" title="Edit category">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn-action btn-action-delete"
+                                            data-bs-toggle="modal" data-bs-target="#deleteCategoryModal"
+                                            data-id="@category.Id" data-name="@category.Name" data-type="category"
+                                            data-product-count="@category.ProductCount"
+                                            data-delete-url="@Url.Action("Delete", "Categories", new { id = category.Id })"
+                                            title="Delete category">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<!-- Delete Category Modal -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCatModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: 1px solid #edf0f5; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid #f1f3f7; padding: 14px 18px;">
+                <h5 class="modal-title" id="deleteCatModalTitle" style="font: 700 14px Manrope, sans-serif; color: #17243b;">
+                    <i class="bi bi-exclamation-triangle text-danger me-1"></i> Confirm Category Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 18px; font-size: 12px; color: #57657a;">
+                <p>Are you sure you want to delete category <strong data-item-name class="text-dark"></strong>?</p>
+                <div class="danger-notice" style="margin-bottom: 0;">
+                    <i class="bi bi-shield-lock"></i>
+                    <div>
+                        <strong>Safety Restriction:</strong> Categories containing assigned products cannot be deleted. All items must first be reassigned or deleted.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #f1f3f7; padding: 12px 18px;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="modalDeleteForm" method="post" action="">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3"></i> Delete Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/products.js" asp-append-version="true"></script>
+}
+
